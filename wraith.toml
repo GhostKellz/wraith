@@ -1,0 +1,58 @@
+# Wraith Configuration Example
+# Modern QUIC/HTTP3 Reverse Proxy
+
+[server]
+bind_address = "::"      # IPv6 bind-all (with IPv4 fallback)
+port = 443
+workers = 0              # Auto-detect CPU cores
+max_connections = 10000
+enable_http3 = true
+enable_http2 = false     # HTTP/3 first approach
+enable_http1 = false     # QUIC-only
+
+[tls]
+auto_cert = true         # ACME integration
+min_version = "tls13"    # TLS 1.3 only (post-quantum ready)
+max_version = "tls13"
+alpn = ["h3", "h3-32", "h3-31"]
+
+[static_files]
+enabled = true
+root = "./public"
+compression = true
+cache_control = "public, max-age=3600"
+etag = true
+
+[security.rate_limiting]
+enabled = true
+requests_per_minute = 60
+burst = 10
+
+[security.headers]
+hsts = true
+hsts_max_age = 31536000
+csp = "default-src 'self'"
+x_frame_options = "DENY"
+
+# Example reverse proxy configuration
+[[proxy.upstreams]]
+name = "backend1"
+address = "127.0.0.1"
+port = 8080
+weight = 1
+
+[[proxy.upstreams]]
+name = "backend2"
+address = "127.0.0.1"
+port = 8081
+weight = 1
+
+[proxy]
+enabled = false
+load_balancing = "round_robin"
+
+[proxy.health_check]
+enabled = true
+interval = 10
+path = "/health"
+expected_status = 200
