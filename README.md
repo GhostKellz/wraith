@@ -2,7 +2,7 @@
 ## 📌 Project Name: Wraith 
 ## 🎯 Objective
 
-Design a modern, blazing-fast, secure reverse proxy and static site server that fully embraces modern web protocols like QUIC and HTTP/3, while offering a radically improved dev and ops experience. The goal is to reimagine NGINX — simplified, declarative, and tuned for speed and cryptographic security.
+Wraith: a modern, blazing-fast, secure reverse proxy and static site server that fully embraces modern web protocols like QUIC and HTTP/3, while offering a radically improved dev and ops experience. The goal is to reimagine NGINX — simplified, declarative, and tuned for speed and cryptographic security.
 
 ---
 
