@@ -6,6 +6,14 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
+    // IMPORTANT: Initialize crypto interface before using Wraith
+    // This example uses std.crypto for development, but parent applications
+    // can provide their own zcrypto-based implementation
+    std.debug.print("🔧 Initializing crypto interface...\n", .{});
+    const crypto_interface = wraith.ExampleStdCryptoInterface.createInterface();
+    wraith.setCryptoInterface(crypto_interface);
+    std.debug.print("✅ Crypto interface initialized with std.crypto\n", .{});
+
     // Parse command line arguments
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);

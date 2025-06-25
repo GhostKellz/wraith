@@ -36,10 +36,7 @@
             .url = "https://github.com/ghostkellz/zquic/archive/main.tar.gz",
             .hash = "zquic-0.0.0-2rPdsxWsAQB5vzINa2i0vP3YVnJ7TQRN6jCUVXiNJbCd",
         },
-        .zcrypto = .{
-            .url = "https://github.com/ghostkellz/zcrypto/archive/main.tar.gz",
-            .hash = "zcrypto-0.0.0-rgQAI3jaAAAuf1k-UigmzC3I2h2fFh9uRx1X833K6RWk",
-        },
+        // zcrypto dependency removed - crypto primitives are now injected by parent applications
         .tokioZ = .{
             .url = "https://github.com/ghostkellz/tokioZ/archive/main.tar.gz",
             .hash = "TokioZ-0.0.0-DgtPReljAgAuGaoLtQCm_E-UA_7j_TAGQ8kkV-mtjz4V",

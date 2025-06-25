@@ -1,9 +1,10 @@
 //! TLS 1.3 Configuration for Wraith
 //! Provides hardened TLS 1.3 setup optimized for QUIC transport
+//! Uses injected crypto primitives instead of bundled crypto library
 
 const std = @import("std");
 const root = @import("root.zig");
-const zcrypto = root.zcrypto;
+const crypto = root.crypto_interface;
 
 const Allocator = std.mem.Allocator;
 
@@ -75,7 +76,14 @@ pub const TlsConfig = struct {
             \\-----END PRIVATE KEY-----
         ;
 
-        // Use zcrypto for better certificate generation in development
+        // Use injected crypto for better certificate generation in development
+        if (!crypto.hasCryptoInterface()) {
+            // Fallback to placeholder certificates if no crypto interface is set
+            self.cert_chain = try self.allocator.dupe(u8, cert_pem);
+            self.private_key = try self.allocator.dupe(u8, key_pem);
+            return;
+        }
+        
         const dev_cert = try self.generateDevCertificate(hostname);
         self.cert_chain = dev_cert.cert_pem;
         self.private_key = dev_cert.key_pem;
@@ -89,49 +97,26 @@ pub const TlsConfig = struct {
     };
     
     fn generateDevCertificate(self: *Self, hostname: []const u8) !DevCertificate {
-        // Use zcrypto's cryptographic functions for better security
-        var rng = std.crypto.random;
+        // Use injected crypto primitives for certificate generation
+        if (!crypto.hasCryptoInterface()) {
+            return error.CryptoInterfaceNotSet;
+        }
         
-        // Generate Ed25519 key pair
-        const seed = blk: {
-            var seed_bytes: [32]u8 = undefined;
-            rng.bytes(&seed_bytes);
-            break :blk seed_bytes;
-        };
+        // Generate TLS key pair using injected crypto
+        const key_pair_result = try crypto.generateTlsKeyPair();
+        if (!key_pair_result.success) {
+            return error.KeyGenerationFailed;
+        }
         
-        const keypair = try std.crypto.sign.Ed25519.KeyPair.create(seed);
-        
-        // Create a more realistic self-signed certificate template
-        var cert_buffer = std.ArrayList(u8).init(self.allocator);
-        defer cert_buffer.deinit();
-        
-        try cert_buffer.appendSlice("-----BEGIN CERTIFICATE-----\n");
-        
-        // Simple X.509 certificate structure (for development only)
-        const cert_info = try std.fmt.allocPrint(self.allocator,
-            \\MIICdTCCAV0CAQAwDQYJKoZIhvcNAQELBQAwEjEQMA4GA1UEAwwHe3M6cy1kZXYw
-            \\HhcNMjUwNjI0MDAwMDAwWhcNMjYwNjI0MDAwMDAwWjASMRAwDgYDVQQDDAdkZXYt
-            \\c2VydmVyMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE{s}
-            \\MA0GCSqGSIb3DQEBCwUAA4IBAQBDev-{s}-cert-for-development-only
-        , .{ hostname, std.fmt.fmtSliceHexLower(&keypair.public_key) });
-        defer self.allocator.free(cert_info);
-        
-        try cert_buffer.appendSlice(cert_info);
-        try cert_buffer.appendSlice("\n-----END CERTIFICATE-----\n");
-        
-        // Create private key PEM
-        var key_buffer = std.ArrayList(u8).init(self.allocator);
-        defer key_buffer.deinit();
-        
-        try key_buffer.appendSlice("-----BEGIN PRIVATE KEY-----\n");
-        const key_b64 = try std.base64.standard.Encoder.encode(self.allocator, &keypair.secret_key);
-        defer self.allocator.free(key_b64);
-        try key_buffer.appendSlice(key_b64);
-        try key_buffer.appendSlice("\n-----END PRIVATE KEY-----\n");
+        // Create self-signed certificate using injected crypto
+        const cert_result = try crypto.createSelfSignedCert(hostname, key_pair_result.key_pair);
+        if (!cert_result.success) {
+            return error.CertificateGenerationFailed;
+        }
         
         return DevCertificate{
-            .cert_pem = try cert_buffer.toOwnedSlice(),
-            .key_pem = try key_buffer.toOwnedSlice(),
+            .cert_pem = try self.allocator.dupe(u8, cert_result.cert_pem),
+            .key_pem = try self.allocator.dupe(u8, key_pair_result.key_pair.private_key),
         };
     }
     

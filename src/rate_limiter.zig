@@ -1,9 +1,9 @@
 //! Rate Limiting and DDoS Protection for Wraith
-//! Implements token bucket and sliding window algorithms with zcrypto for secure hashing
+//! Implements token bucket and sliding window algorithms with injected crypto for secure hashing
 
 const std = @import("std");
 const root = @import("root.zig");
-const zcrypto = root.zcrypto;
+const crypto = root.crypto_interface;
 
 const Allocator = std.mem.Allocator;
 

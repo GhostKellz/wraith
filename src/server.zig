@@ -5,7 +5,7 @@ const std = @import("std");
 const root = @import("root.zig");
 const zquic = root.zquic;
 const tokioZ = root.tokioZ;
-const zcrypto = root.zcrypto;
+const crypto = root.crypto_interface;
 
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
@@ -27,7 +27,7 @@ pub const WraithServer = struct {
     config: ServerConfig,
     runtime: tokioZ.AsyncRuntime,
     quic_server: ?zquic.Http3Server.Http3Server,
-    tls_secrets: ?zcrypto.tls.Secrets,
+    tls_configured: bool = false,
     is_running: bool = false,
 
     const Self = @This();
@@ -41,15 +41,14 @@ pub const WraithServer = struct {
         // Create async runtime optimized for I/O (perfect for QUIC!)
         const runtime = try tokioZ.AsyncRuntime.init(allocator);
         
-        // Initialize TLS secrets (will be set when connection starts)
-        // zcrypto provides low-level crypto primitives, not high-level TLS config
+        // TLS will be configured using injected crypto primitives when needed
         
         return Self{
             .allocator = allocator,
             .config = config,
             .runtime = runtime,
             .quic_server = null,
-            .tls_secrets = null,
+            .tls_configured = false,
         };
     }
 

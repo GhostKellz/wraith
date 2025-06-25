@@ -16,10 +16,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const zcrypto_dep = b.dependency("zcrypto", .{
-        .target = target,
-        .optimize = optimize,
-    });
+    // zcrypto dependency removed - crypto primitives are now injected by parent applications
 
     // Create the main Wraith module
     const mod = b.addModule("wraith", .{
@@ -28,7 +25,6 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "tokioZ", .module = tokioZ_dep.module("TokioZ") },
             .{ .name = "zquic", .module = zquic_dep.module("zquic") },
-            .{ .name = "zcrypto", .module = zcrypto_dep.module("zcrypto") },
         },
     });
 
@@ -43,7 +39,6 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "wraith", .module = mod },
                 .{ .name = "tokioZ", .module = tokioZ_dep.module("TokioZ") },
                 .{ .name = "zquic", .module = zquic_dep.module("zquic") },
-                .{ .name = "zcrypto", .module = zcrypto_dep.module("zcrypto") },
             },
         }),
     });
