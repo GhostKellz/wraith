@@ -1,12 +1,55 @@
-//! Wraith Crypto Interface - v0.2.0 - Simple working implementation
-//! Compatible with Zig v0.15 and provides basic crypto operations
+//! Crypto Interface for Wraith
+//! Allows parent applications to inject crypto primitives instead of bundling zcrypto
 
 const std = @import("std");
 
-// Result types for crypto operations
+/// Crypto primitives that parent applications must provide
+pub const CryptoInterface = struct {
+    // TLS & Certificate functions
+    generateKeypairFn: *const fn () KeypairResult,
+    keypairFromSeedFn: *const fn (seed: [32]u8) KeypairResult,
+    signFn: *const fn (message: []const u8, secret_key: [64]u8) [64]u8,
+    verifyFn: *const fn (message: []const u8, signature: [64]u8, public_key: [32]u8) bool,
+
+    // Hashing functions
+    hashFn: *const fn (data: []const u8) [32]u8,
+    sha256Fn: *const fn (data: []const u8) [32]u8,
+    sha384Fn: *const fn (data: []const u8) [48]u8,
+
+    // Random number generation
+    randomBytesFn: *const fn (buffer: []u8) void,
+
+    // TLS specific functions
+    generateTlsKeyPairFn: *const fn () TlsKeyPairResult,
+    createSelfSignedCertFn: *const fn (hostname: []const u8, key_pair: TlsKeyPair) CertificateResult,
+
+    // AEAD encryption for QUIC
+    aeadEncryptFn: *const fn (plaintext: []const u8, key: []const u8, nonce: []const u8) EncryptResult,
+    aeadDecryptFn: *const fn (ciphertext: []const u8, key: []const u8, nonce: []const u8) DecryptResult,
+};
+
+/// Global crypto interface instance
+var crypto_interface: ?CryptoInterface = null;
+
+/// Set the crypto interface (must be called before using any crypto functions)
+pub fn setCryptoInterface(interface: CryptoInterface) void {
+    crypto_interface = interface;
+}
+
+/// Get the current crypto interface
+pub fn getCryptoInterface() ?CryptoInterface {
+    return crypto_interface;
+}
+
+/// Check if crypto interface is available
+pub fn hasCryptoInterface() bool {
+    return crypto_interface != null;
+}
+
+// Result types
 pub const KeypairResult = struct {
     public_key: [32]u8,
-    secret_key: [64]u8,  
+    secret_key: [64]u8,
     success: bool,
     error_msg: ?[]const u8 = null,
 };
@@ -23,13 +66,14 @@ pub const TlsKeyPairResult = struct {
 };
 
 pub const CertificateResult = struct {
-    certificate: []const u8,
+    cert_pem: []const u8,
     success: bool,
     error_msg: ?[]const u8 = null,
 };
 
 pub const EncryptResult = struct {
     ciphertext: []const u8,
+    tag: [16]u8,
     success: bool,
     error_msg: ?[]const u8 = null,
 };
@@ -39,29 +83,6 @@ pub const DecryptResult = struct {
     success: bool,
     error_msg: ?[]const u8 = null,
 };
-
-// Crypto interface definition
-pub const CryptoInterface = struct {
-    generateKeypairFn: *const fn () KeypairResult,
-    keypairFromSeedFn: *const fn (seed: [32]u8) KeypairResult,
-    signFn: *const fn (message: []const u8, secret_key: [64]u8) [64]u8,
-    verifyFn: *const fn (message: []const u8, signature: [64]u8, public_key: [32]u8) bool,
-    hashFn: *const fn (data: []const u8) [32]u8,
-    sha256Fn: *const fn (data: []const u8) [32]u8,
-    sha384Fn: *const fn (data: []const u8) [48]u8,
-    randomBytesFn: *const fn (buffer: []u8) void,
-    generateTlsKeyPairFn: *const fn () TlsKeyPairResult,
-    createSelfSignedCertFn: *const fn (hostname: []const u8, key_pair: TlsKeyPair) CertificateResult,
-    aeadEncryptFn: *const fn (plaintext: []const u8, key: []const u8, nonce: []const u8) EncryptResult,
-    aeadDecryptFn: *const fn (ciphertext: []const u8, key: []const u8, nonce: []const u8) DecryptResult,
-};
-
-// Global crypto interface (injected by parent application)
-var crypto_interface: ?CryptoInterface = null;
-
-pub fn setCryptoInterface(interface: CryptoInterface) void {
-    crypto_interface = interface;
-}
 
 // Convenience functions that use the injected interface
 pub fn generateKeypair() !KeypairResult {
@@ -124,152 +145,141 @@ pub fn aeadDecrypt(ciphertext: []const u8, key: []const u8, nonce: []const u8) !
     return interface.aeadDecryptFn(ciphertext, key, nonce);
 }
 
-/// Simple working implementation using minimal crypto operations
-/// This is a placeholder that provides the interface without complex crypto
-pub const StdCryptoInterface = struct {
-    
+/// Example implementation using std.crypto for development/testing
+pub const ExampleStdCryptoInterface = struct {
     pub fn generateKeypairImpl() KeypairResult {
         var seed: [32]u8 = undefined;
         std.crypto.random.bytes(&seed);
         return keypairFromSeedImpl(seed);
     }
-    
+
     pub fn keypairFromSeedImpl(seed: [32]u8) KeypairResult {
-        // For now, create a dummy keypair - in production, use proper Ed25519
+        const keypair = std.crypto.sign.Ed25519.KeyPair.fromSecretKey(seed) catch {
+            return KeypairResult{
+                .public_key = std.mem.zeroes([32]u8),
+                .secret_key = std.mem.zeroes([64]u8),
+                .success = false,
+                .error_msg = "Failed to create keypair",
+            };
+        };
+
         var secret_key: [64]u8 = undefined;
-        var public_key: [32]u8 = undefined;
-        
-        // Copy seed to first part of secret key
-        @memcpy(secret_key[0..32], &seed);
-        
-        // Generate public key from seed (simplified)
-        var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-        hasher.update(&seed);
-        hasher.final(&public_key);
-        
-        // Copy public key to second part of secret key
-        @memcpy(secret_key[32..64], &public_key);
-        
+        @memcpy(secret_key[0..32], &keypair.secret_key);
+        @memcpy(secret_key[32..64], &keypair.public_key);
+
         return KeypairResult{
-            .public_key = public_key,
+            .public_key = keypair.public_key,
             .secret_key = secret_key,
             .success = true,
         };
     }
-    
+
     pub fn signImpl(message: []const u8, secret_key: [64]u8) [64]u8 {
-        // Simplified signing - in production, use proper Ed25519
-        var signature: [64]u8 = undefined;
-        var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-        hasher.update(message);
-        hasher.update(secret_key[0..32]);
-        var msg_hash: [32]u8 = undefined;
-        hasher.final(&msg_hash);
-        
-        // Duplicate hash to create 64-byte signature
-        @memcpy(signature[0..32], &msg_hash);
-        @memcpy(signature[32..64], &msg_hash);
-        
-        return signature;
+        const keypair = std.crypto.sign.Ed25519.KeyPair{
+            .secret_key = secret_key[0..32].*,
+            .public_key = secret_key[32..64].*,
+        };
+        return keypair.sign(message, null);
     }
-    
+
     pub fn verifyImpl(message: []const u8, signature: [64]u8, public_key: [32]u8) bool {
-        // Simplified verification - in production, use proper Ed25519
-        var expected_hash: [32]u8 = undefined;
-        var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-        hasher.update(message);
-        hasher.update(&public_key);
-        hasher.final(&expected_hash);
-        
-        // Check if first 32 bytes of signature match expected hash
-        return std.mem.eql(u8, signature[0..32], &expected_hash);
+        std.crypto.sign.Ed25519.verify(signature, message, public_key) catch return false;
+        return true;
     }
-    
-    pub fn hashImpl(data: []const u8) [32]u8 {
-        var result: [32]u8 = undefined;
-        var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-        hasher.update(data);
-        hasher.final(&result);
-        return result;
+
+    pub fn hashBytes(data: []const u8) [32]u8 {
+        return std.crypto.hash.sha2.Sha256.hash(data);
     }
-    
-    pub fn sha256Impl(data: []const u8) [32]u8 {
-        var result: [32]u8 = undefined;
-        var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-        hasher.update(data);
-        hasher.final(&result);
-        return result;
+
+    pub fn sha256Bytes(data: []const u8) [32]u8 {
+        return std.crypto.hash.sha2.Sha256.hash(data);
     }
-    
-    pub fn sha384Impl(data: []const u8) [48]u8 {
-        var result: [48]u8 = undefined;
-        var hasher = std.crypto.hash.sha2.Sha384.init(.{});
-        hasher.update(data);
-        hasher.final(&result);
-        return result;
+
+    pub fn sha384Bytes(data: []const u8) [48]u8 {
+        return std.crypto.hash.sha2.Sha384.hash(data);
     }
-    
+
     pub fn randomBytesImpl(buffer: []u8) void {
         std.crypto.random.bytes(buffer);
     }
-    
+
     pub fn generateTlsKeyPairImpl() TlsKeyPairResult {
-        // Simplified TLS key generation - in production, use proper X.509
-        const dummy_private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC5..." ;
-        const dummy_public_key = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAubh...";
-        
+        // Generate Ed25519 key pair for TLS
+        var seed: [32]u8 = undefined;
+        std.crypto.random.bytes(&seed);
+
+        const keypair = std.crypto.sign.Ed25519.KeyPair.create(seed) catch {
+            return TlsKeyPairResult{
+                .key_pair = TlsKeyPair{
+                    .public_key = "",
+                    .private_key = "",
+                },
+                .success = false,
+                .error_msg = "Failed to generate TLS keypair",
+            };
+        };
+
+        // TODO: Convert keypair to PEM format in a real implementation
+        _ = keypair; // Will be used when proper PEM conversion is implemented
+
+        // In a real implementation, these would be properly formatted PEM keys
+        const public_pem = "-----BEGIN PUBLIC KEY-----\n(base64 encoded key)\n-----END PUBLIC KEY-----";
+        const private_pem = "-----BEGIN PRIVATE KEY-----\n(base64 encoded key)\n-----END PRIVATE KEY-----";
+
         return TlsKeyPairResult{
             .key_pair = TlsKeyPair{
-                .public_key = dummy_public_key,
-                .private_key = dummy_private_key,
+                .public_key = public_pem,
+                .private_key = private_pem,
             },
             .success = true,
         };
     }
-    
+
     pub fn createSelfSignedCertImpl(hostname: []const u8, key_pair: TlsKeyPair) CertificateResult {
         _ = hostname;
         _ = key_pair;
-        
-        // Simplified certificate generation for development
-        const dummy_cert = 
+
+        // Simplified cert generation for example
+        const cert_pem =
             \\-----BEGIN CERTIFICATE-----
-            \\MIIBkTCB+wIJALKl9FboXrz5MA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxv
-            \\Y2FsaG9zdDAeFw0yNDEyMDUxMDAwMDBaFw0yNTA2MDUxMDAwMDBaMBQxEjAQBgNV
-            \\BAMMCWxvY2FsaG9zdDBcMA0GCSqGSIb3DQEBAQUAA0sAMEgCQQC8+K6mNw9t8vNP
+            \\MIIBkTCB+wIJALQ+5+5+5+5+MA0GCSqGSIb3DQEBCwUAMBUxEzARBgNVBAMMCmxv
+            \\Y2FsaG9zdDAeFw0yNTA2MjQwMDAwMDBaFw0yNjA2MjQwMDAwMDBaMBUxEzARBgNV
+            \\BAMMCmxvY2FsaG9zdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKp4/5+5+5+5
+            \\+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5+5
             \\-----END CERTIFICATE-----
         ;
-        
+
         return CertificateResult{
-            .certificate = dummy_cert,
+            .cert_pem = cert_pem,
             .success = true,
         };
     }
-    
+
     pub fn aeadEncryptImpl(plaintext: []const u8, key: []const u8, nonce: []const u8) EncryptResult {
         _ = plaintext;
-        _ = key; 
+        _ = key;
         _ = nonce;
-        
-        // Simplified AEAD encryption for development
+
+        // Simplified AEAD encryption for example
         return EncryptResult{
             .ciphertext = "encrypted_data",
+            .tag = std.mem.zeroes([16]u8),
             .success = true,
         };
     }
-    
+
     pub fn aeadDecryptImpl(ciphertext: []const u8, key: []const u8, nonce: []const u8) DecryptResult {
         _ = ciphertext;
         _ = key;
         _ = nonce;
-        
-        // Simplified AEAD decryption for development
+
+        // Simplified AEAD decryption for example
         return DecryptResult{
             .plaintext = "decrypted_data",
             .success = true,
         };
     }
-    
+
     /// Create the interface struct with function pointers
     pub fn createInterface() CryptoInterface {
         return CryptoInterface{
@@ -277,9 +287,9 @@ pub const StdCryptoInterface = struct {
             .keypairFromSeedFn = keypairFromSeedImpl,
             .signFn = signImpl,
             .verifyFn = verifyImpl,
-            .hashFn = hashImpl,
-            .sha256Fn = sha256Impl,
-            .sha384Fn = sha384Impl,
+            .hashFn = hashBytes,
+            .sha256Fn = sha256Bytes,
+            .sha384Fn = sha384Bytes,
             .randomBytesFn = randomBytesImpl,
             .generateTlsKeyPairFn = generateTlsKeyPairImpl,
             .createSelfSignedCertFn = createSelfSignedCertImpl,
@@ -288,6 +298,3 @@ pub const StdCryptoInterface = struct {
         };
     }
 };
-
-// Alias for backward compatibility
-pub const ExampleStdCryptoInterface = StdCryptoInterface;

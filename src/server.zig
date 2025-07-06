@@ -26,7 +26,7 @@ pub const WraithServer = struct {
     allocator: Allocator,
     config: ServerConfig,
     runtime: tokioZ.AsyncRuntime,
-    quic_server: ?zquic.Http3Server.Http3Server,
+    quic_server: ?zquic.Http3.Http3Server,
     tls_configured: bool = false,
     is_running: bool = false,
 
@@ -63,8 +63,16 @@ pub const WraithServer = struct {
     pub fn start(self: *Self) !void {
         print("🚀 Starting Wraith HTTP/3 server on {s}:{}\n", .{ self.config.bind_address, self.config.port });
         
-        // Create QUIC server (simplified API in current zquic implementation)
-        self.quic_server = zquic.Http3Server.Http3Server.init(self.allocator);
+        // Create QUIC server config compatible with zquic v0.4.0
+        const quic_config = zquic.Http3.ServerConfig{
+            .max_connections = self.config.max_connections,
+            .enable_compression = self.config.enable_compression,
+            .static_files_root = self.config.static_root,
+            .enable_security_headers = true,
+        };
+        
+        // Create QUIC server with proper config
+        self.quic_server = try zquic.Http3.Http3Server.init(self.allocator, quic_config);
 
         self.is_running = true;
         
@@ -75,24 +83,28 @@ pub const WraithServer = struct {
     fn runServer(self: *Self) !void {
         var server = &self.quic_server.?;
         
-        print("✅ Wraith ready! Basic HTTP/3 server initialized\n", .{});
+        print("✅ Wraith ready! HTTP/3 server initialized\n", .{});
         print("📋 Server features:\n", .{});
-        print("   • Protocol: HTTP/3 over QUIC (basic implementation)\n", .{});
+        print("   • Protocol: HTTP/3 over QUIC (zquic v0.4.0)\n", .{});
         print("   • Libraries: zquic, zcrypto, tokioZ\n", .{});
         print("   • Max connections: {}\n", .{self.config.max_connections});
-        print("   • Status: Libraries integrated successfully!\n", .{});
 
-        // Simple demonstration using the actual available API
-        const test_request = "GET / HTTP/3";
-        if (server.processRequest(test_request)) |response| {
-            print("🔍 Test request processed: {s}\n", .{response});
-            self.allocator.free(response);
-        } else |err| {
-            print("❌ Error processing test request: {}\n", .{err});
-        }
+        // Add some basic routes for demonstration
+        try server.get("/", handleIndex);
+        try server.get("/health", handleHealth);
+        try server.get("/stats", handleStats);
         
-        print("🎉 Wraith server demonstration complete!\n", .{});
-        self.is_running = false;
+        // Start the HTTP/3 server
+        try server.start();
+        
+        print("🎉 Wraith HTTP/3 server started successfully!\n", .{});
+        print("🌐 Ready to handle HTTP/3 requests on {s}:{}\n", .{ self.config.bind_address, self.config.port });
+        
+        // Keep the server running
+        while (self.is_running) {
+            std.time.sleep(1000 * 1000 * 1000); // Sleep 1 second
+            server.cleanupExpiredConnections();
+        }
     }
 
     fn handleConnection(self: *Self, connection: zquic.Connection) !void {
@@ -253,6 +265,37 @@ pub const WraithServer = struct {
         self.is_running = false;
     }
 };
+
+/// Request handlers for HTTP/3 routes
+fn handleIndex(req: *zquic.Http3.Request, res: *zquic.Http3.Response) !void {
+    _ = req;
+    try res.json(.{
+        .message = "🔥 Wraith HTTP/3 Proxy Server",
+        .version = "0.2.0",
+        .protocol = "HTTP/3 over QUIC",
+        .status = "running"
+    });
+}
+
+fn handleHealth(req: *zquic.Http3.Request, res: *zquic.Http3.Response) !void {
+    _ = req;
+    try res.json(.{
+        .status = "healthy",
+        .protocol = "HTTP/3",
+        .uptime = std.time.timestamp()
+    });
+}
+
+fn handleStats(req: *zquic.Http3.Request, res: *zquic.Http3.Response) !void {
+    _ = req;
+    // In a real implementation, we'd get actual stats from the server
+    try res.json(.{
+        .connections = 0,
+        .requests_processed = 0,
+        .bytes_sent = 0,
+        .bytes_received = 0
+    });
+}
 
 /// Start the Wraith server with default configuration
 pub fn start(allocator: Allocator) !void {
