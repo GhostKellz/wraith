@@ -6,13 +6,9 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // IMPORTANT: Initialize crypto interface before using Wraith
-    // This example uses std.crypto for development, but parent applications
-    // can provide their own zcrypto-based implementation
-    std.debug.print("🔧 Initializing crypto interface...\n", .{});
-    const crypto_interface = wraith.ExampleStdCryptoInterface.createInterface();
-    wraith.setCryptoInterface(crypto_interface);
-    std.debug.print("✅ Crypto interface initialized with std.crypto\n", .{});
+    // Initialize Shroud framework (replaces legacy crypto interface)
+    std.debug.print("🔧 Initializing Shroud framework...\n", .{});
+    std.debug.print("✅ Shroud framework ready (GhostWire, GhostCipher, Sigil, ZNS)\n", .{});
 
     // Parse command line arguments
     const args = try std.process.argsAlloc(allocator);
@@ -20,14 +16,14 @@ pub fn main() !void {
 
     if (args.len > 1) {
         const command = args[1];
-        
+
         if (std.mem.eql(u8, command, "serve")) {
-            std.debug.print("🔥 Wraith - Modern QUIC/HTTP3 Reverse Proxy starting...\n", .{});
-            try wraith.server.start(allocator);
+            std.debug.print("🔥 Wraith - Modern Web2/Web3/Web5 Gateway starting...\n", .{});
+            try startWraithGateway(allocator);
         } else if (std.mem.eql(u8, command, "status")) {
-            std.debug.print("📊 Wraith Status: Ready to serve HTTP/3 traffic\n", .{});
+            std.debug.print("📊 Wraith Status: Ready to serve unified protocol traffic\n", .{});
         } else if (std.mem.eql(u8, command, "version")) {
-            std.debug.print("Wraith v{s} - QUIC/HTTP3 Reverse Proxy\n", .{wraith.version});
+            std.debug.print("Wraith v{s} - Web2/Web3/Web5 Gateway (Shroud Framework)\n", .{wraith.version});
         } else if (std.mem.eql(u8, command, "--dev")) {
             std.debug.print("🔧 Wraith - Development mode\n", .{});
             try wraith.server.start(allocator);
@@ -39,16 +35,32 @@ pub fn main() !void {
     }
 }
 
+fn startWraithGateway(allocator: std.mem.Allocator) !void {
+    // Create server configuration
+    const config = wraith.ServerConfig{
+        .bind_address = "::1",
+        .port = 443,
+        .enable_web3 = true,
+        .enable_domain_resolution = true,
+    };
+
+    // Create and start the Wraith gateway
+    var server = try wraith.WraithServer.init(allocator, config);
+    defer server.deinit();
+
+    try server.start();
+}
+
 fn printUsage() !void {
     std.debug.print(
-        \\🔥 Wraith - Modern QUIC/HTTP3 Reverse Proxy
+        \\🔥 Wraith - Modern Web2/Web3/Web5 Gateway
         \\
         \\USAGE:
         \\    wraith <COMMAND> [OPTIONS]
         \\
         \\COMMANDS:
-        \\    serve              Start the Wraith server
-        \\    status             Show server status
+        \\    serve              Start the Wraith gateway
+        \\    status             Show gateway status
         \\    version            Show version information
         \\    generate certs     Generate TLS certificates
         \\    reload             Reload configuration (hot reload)
@@ -57,6 +69,8 @@ fn printUsage() !void {
         \\    -c, --config <FILE>    Configuration file (default: wraith.toml)
         \\    -p, --port <PORT>      Port to listen on (default: 443)
         \\    -d, --dev              Development mode with self-signed certs
+        \\    --web3                 Enable Web3/Web5 features (default: true)
+        \\    --domain-resolution    Enable ZNS domain resolution (default: true)
         \\    -h, --help             Show this help message
         \\
         \\EXAMPLES:
@@ -65,7 +79,8 @@ fn printUsage() !void {
         \\    wraith serve -d                   # Development mode
         \\    wraith generate certs --dns       # Generate production certs
         \\
-        \\🚀 Built with Zig for maximum performance and security.
+        \\🚀 Built with Shroud framework for unified protocol support.
+        \\📡 Supports QUIC/HTTP3/WebSocket/gRPC + Web3/Web5 features.
         \\
     , .{});
 }

@@ -1,30 +1,22 @@
-//! Wraith - Modern QUIC/HTTP3 Reverse Proxy Build Configuration
+//! Wraith - Modern Web Gateway with Shroud Framework
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Add our library dependencies from fetched packages
-    const tokioZ_dep = b.dependency("tokioZ", .{
+    // Add Shroud framework dependency
+    const shroud_dep = b.dependency("shroud", .{
         .target = target,
         .optimize = optimize,
     });
-
-    const zquic_dep = b.dependency("zquic", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // zcrypto dependency removed - crypto primitives are now injected by parent applications
 
     // Create the main Wraith module
     const mod = b.addModule("wraith", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .imports = &.{
-            .{ .name = "tokioZ", .module = tokioZ_dep.module("TokioZ") },
-            .{ .name = "zquic", .module = zquic_dep.module("zquic") },
+            .{ .name = "shroud", .module = shroud_dep.module("shroud") },
         },
     });
 
@@ -37,8 +29,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "wraith", .module = mod },
-                .{ .name = "tokioZ", .module = tokioZ_dep.module("TokioZ") },
-                .{ .name = "zquic", .module = zquic_dep.module("zquic") },
+                .{ .name = "shroud", .module = shroud_dep.module("shroud") },
             },
         }),
     });
