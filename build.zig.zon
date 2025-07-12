@@ -34,7 +34,11 @@
     .dependencies = .{
         .shroud = .{
             .url = "https://github.com/ghostkellz/shroud/archive/main.tar.gz",
-            .hash = "shroud-0.4.0-z7C8mQqQHABws8EKK9gkBc8b73eXiWhbziy3Hdlb-8VA",
+            .hash = "shroud-0.5.0-z7C8mUBi5Acgo0PJIvKPC33P79z0uzwYWEjs1ApNoli-",
+        },
+        .zquic = .{
+            .url = "https://github.com/ghostkellz/zquic/archive/main.tar.gz",
+            .hash = "zquic-0.6.0-2rPdsxtVmRMYQSwaCb_y_w9gpTcoB27Ku4CIfYd_KcUr",
         },
     },
     .paths = .{

@@ -13,7 +13,8 @@ pub const ProxyManager = struct {
     upstreams: std.ArrayList(Upstream),
     load_balancer: LoadBalancer,
     health_checker: HealthChecker,
-    request_counter: std.atomic.Atomic(u64),
+    request_counter: std.atomic.Value(u64),
+    connection_pool: ConnectionPool,
 
     const Self = @This();
 
@@ -33,8 +34,8 @@ pub const ProxyManager = struct {
                 .current_fails = 0,
                 .last_fail_time = 0,
                 .is_healthy = true,
-                .active_connections = std.atomic.Atomic(u32).init(0),
-                .total_requests = std.atomic.Atomic(u64).init(0),
+                .active_connections = std.atomic.Value(u32).init(0),
+                .total_requests = std.atomic.Value(u64).init(0),
             };
             try upstreams.append(upstream);
         }
@@ -44,7 +45,8 @@ pub const ProxyManager = struct {
             .upstreams = upstreams,
             .load_balancer = LoadBalancer.init(config.method),
             .health_checker = HealthChecker.init(allocator, config.health_check),
-            .request_counter = std.atomic.Atomic(u64).init(0),
+            .request_counter = std.atomic.Value(u64).init(0),
+            .connection_pool = try ConnectionPool.init(allocator, config.connection_pool),
         };
     }
 
@@ -54,6 +56,7 @@ pub const ProxyManager = struct {
         }
         self.upstreams.deinit();
         self.health_checker.deinit();
+        self.connection_pool.deinit();
     }
 
     pub fn forwardRequest(self: *Self, request: ProxyRequest) !ProxyResponse {
@@ -130,22 +133,19 @@ pub const ProxyManager = struct {
     }
 
     fn sendToUpstream(self: *Self, upstream: *Upstream, request: ProxyRequest) !ProxyResponse {
-        // Create HTTP/3 client connection using zquic
-        var client = zquic.Http3Client.Http3Client.init(self.allocator);
-        defer client.deinit();
-
-        // Connect to upstream
+        // Get pooled connection for zero-copy operations
         const addr = try std.fmt.allocPrint(self.allocator, "{s}:{}", .{ upstream.address, upstream.port });
         defer self.allocator.free(addr);
 
-        try client.connect(addr);
+        var client = try self.connection_pool.getConnection(addr);
 
-        // Send request
-        const upstream_response = try client.sendRequest(.{
+        // Send request with zero-copy optimization
+        const upstream_response = try client.sendRequestZeroCopy(.{
             .method = request.method,
             .path = request.path,
             .headers = request.headers,
             .body = request.body,
+            .use_post_quantum = true, // Enable ML-KEM-768/SLH-DSA
         });
 
         var response_headers = std.StringHashMap([]const u8).init(self.allocator);
@@ -165,9 +165,12 @@ pub const ProxyManager = struct {
         // Add proxy headers
         try response_headers.put(try self.allocator.dupe(u8, "x-proxied-by"), try self.allocator.dupe(u8, "Wraith/0.1.0"));
 
+        // Return connection to pool for reuse
+        self.connection_pool.returnConnection(addr, client);
+
         return ProxyResponse{
             .status = upstream_response.status,
-            .body = try self.allocator.dupe(u8, upstream_response.body),
+            .body = upstream_response.body, // Zero-copy - no duplication needed
             .headers = response_headers,
         };
     }
@@ -216,12 +219,16 @@ pub const ProxyManager = struct {
             }
         }
 
+        const pool_stats = self.connection_pool.getStats();
+
         return ProxyStats{
             .total_requests = self.request_counter.load(.SeqCst),
             .upstream_requests = total_requests,
             .active_connections = active_connections,
             .healthy_upstreams = healthy_count,
             .total_upstreams = @intCast(self.upstreams.items.len),
+            .pool_hits = pool_stats.hits,
+            .pool_misses = pool_stats.misses,
         };
     }
 };
@@ -239,8 +246,8 @@ pub const Upstream = struct {
     current_fails: u32,
     last_fail_time: i64,
     is_healthy: bool,
-    active_connections: std.atomic.Atomic(u32),
-    total_requests: std.atomic.Atomic(u64),
+    active_connections: std.atomic.Value(u32),
+    total_requests: std.atomic.Value(u64),
 };
 
 pub const LoadBalancingMethod = enum {
@@ -253,14 +260,14 @@ pub const LoadBalancingMethod = enum {
 
 pub const LoadBalancer = struct {
     method: LoadBalancingMethod,
-    round_robin_index: std.atomic.Atomic(u32),
+    round_robin_index: std.atomic.Value(u32),
 
     const Self = @This();
 
     pub fn init(method: LoadBalancingMethod) Self {
         return Self{
             .method = method,
-            .round_robin_index = std.atomic.Atomic(u32).init(0),
+            .round_robin_index = std.atomic.Value(u32).init(0),
         };
     }
 
@@ -402,6 +409,7 @@ pub const ProxyConfig = struct {
     upstreams: []const UpstreamConfig,
     method: LoadBalancingMethod = .round_robin,
     health_check: HealthCheckConfig = .{},
+    connection_pool: ConnectionPoolConfig = .{},
 };
 
 pub const UpstreamConfig = struct {
@@ -442,4 +450,109 @@ pub const ProxyStats = struct {
     active_connections: u32,
     healthy_upstreams: u32,
     total_upstreams: u32,
+    pool_hits: u64,
+    pool_misses: u64,
+};
+
+// High-performance connection pool for HTTP/3 clients
+pub const ConnectionPool = struct {
+    allocator: Allocator,
+    connections: std.HashMap([]const u8, *PooledConnection, std.hash_map.StringContext, std.hash_map.default_max_load_percentage),
+    max_connections_per_host: u32,
+    max_idle_time: u64,
+    hits: std.atomic.Value(u64),
+    misses: std.atomic.Value(u64),
+
+    const Self = @This();
+
+    const PooledConnection = struct {
+        client: *zquic.Http3Client.Http3Client,
+        last_used: i64,
+        is_healthy: bool,
+    };
+
+    pub fn init(allocator: Allocator, config: ConnectionPoolConfig) !Self {
+        return Self{
+            .allocator = allocator,
+            .connections = std.HashMap([]const u8, *PooledConnection, std.hash_map.StringContext, std.hash_map.default_max_load_percentage).init(allocator),
+            .max_connections_per_host = config.max_connections_per_host,
+            .max_idle_time = config.max_idle_time,
+            .hits = std.atomic.Value(u64).init(0),
+            .misses = std.atomic.Value(u64).init(0),
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+        var iter = self.connections.iterator();
+        while (iter.next()) |entry| {
+            entry.value_ptr.*.client.deinit();
+            self.allocator.destroy(entry.value_ptr.*);
+            self.allocator.free(entry.key_ptr.*);
+        }
+        self.connections.deinit();
+    }
+
+    pub fn getConnection(self: *Self, addr: []const u8) !*zquic.Http3Client.Http3Client {
+        const now = std.time.timestamp();
+
+        // Try to get existing connection
+        if (self.connections.get(addr)) |pooled| {
+            if (pooled.is_healthy and (now - pooled.last_used) < self.max_idle_time) {
+                pooled.last_used = now;
+                _ = self.hits.fetchAdd(1, .SeqCst);
+                return pooled.client;
+            } else {
+                // Connection expired or unhealthy, remove it
+                _ = self.connections.remove(addr);
+                pooled.client.deinit();
+                self.allocator.destroy(pooled);
+            }
+        }
+
+        // Create new connection
+        _ = self.misses.fetchAdd(1, .SeqCst);
+        const client = try self.allocator.create(zquic.Http3Client.Http3Client);
+        client.* = zquic.Http3Client.Http3Client.init(self.allocator);
+        
+        // Configure for high performance and post-quantum crypto
+        try client.setConfig(.{
+            .enable_post_quantum = true,
+            .congestion_control = .blockchain_optimized,
+            .zero_copy_enabled = true,
+            .max_concurrent_streams = 1000,
+        });
+
+        try client.connect(addr);
+
+        const pooled = try self.allocator.create(PooledConnection);
+        pooled.* = PooledConnection{
+            .client = client,
+            .last_used = now,
+            .is_healthy = true,
+        };
+
+        const addr_copy = try self.allocator.dupe(u8, addr);
+        try self.connections.put(addr_copy, pooled);
+
+        return client;
+    }
+
+    pub fn returnConnection(self: *Self, addr: []const u8, client: *zquic.Http3Client.Http3Client) void {
+        _ = client;
+        if (self.connections.getPtr(addr)) |pooled| {
+            pooled.*.last_used = std.time.timestamp();
+        }
+    }
+
+    pub fn getStats(self: *Self) struct { hits: u64, misses: u64 } {
+        return .{
+            .hits = self.hits.load(.SeqCst),
+            .misses = self.misses.load(.SeqCst),
+        };
+    }
+};
+
+pub const ConnectionPoolConfig = struct {
+    max_connections_per_host: u32 = 100,
+    max_idle_time: u64 = 300, // 5 minutes
 };
