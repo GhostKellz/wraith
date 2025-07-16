@@ -24,7 +24,7 @@ pub const WraithProxy = struct {
     runtime: AsyncRuntime,
     network: NetworkManager,
     tls: TlsProvider,
-    
+
     pub fn init(allocator: std.mem.Allocator) !WraithProxy {
         return WraithProxy{
             .allocator = allocator,
@@ -33,17 +33,17 @@ pub const WraithProxy = struct {
             .tls = try TlsProvider.init(allocator),
         };
     }
-    
+
     pub fn deinit(self: *WraithProxy) void {
         self.tls.deinit();
         self.network.deinit();
         self.runtime.deinit();
     }
-    
+
     pub fn setupTls(self: *WraithProxy, cert_path: []const u8, key_path: []const u8) !void {
         return self.tls.loadCertificate(cert_path, key_path);
     }
-    
+
     pub fn addRoute(self: *WraithProxy, pattern: []const u8, upstream: []const u8) !void {
         // Route management functionality
         _ = self;

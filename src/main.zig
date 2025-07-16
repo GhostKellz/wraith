@@ -16,7 +16,7 @@ pub fn main() !void {
 
     if (args.len > 1) {
         const command = args[1];
-        
+
         if (std.mem.eql(u8, command, "serve")) {
             std.debug.print("🔥 Wraith - Modern QUIC/HTTP3 Reverse Proxy starting...\n", .{});
             try startWraithProxy(allocator);

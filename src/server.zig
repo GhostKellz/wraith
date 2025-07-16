@@ -16,7 +16,7 @@ const WraithProxy = struct {
     runtime: *zsync.Runtime,
 
     pub fn init(allocator: Allocator) !WraithProxy {
-        return WraithProxy{ 
+        return WraithProxy{
             .allocator = allocator,
             .runtime = try zsync.Runtime.init(allocator, .{
                 .max_tasks = 1024,
