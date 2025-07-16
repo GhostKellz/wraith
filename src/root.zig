@@ -1,49 +1,54 @@
-//! Wraith - Modern Web2/Web3/Web5 Gateway
-//! Built on the Shroud framework for unified QUIC/HTTP3/WebSocket/gRPC support
-//! Includes crypto primitives, domain resolution, and identity management
+//! Wraith - Modern QUIC/HTTP3 Reverse Proxy
+//! Built on zquic, ghostnet, zcrypto, and zsync for high-performance proxying
+//! Includes TLS termination, routing, and access control
 
 const std = @import("std");
 
-// Import Shroud framework
-pub const shroud = @import("shroud");
+// Import core dependencies
+pub const zquic = @import("zquic");
+pub const ghostnet = @import("ghostnet");
+pub const zcrypto = @import("zcrypto");
+pub const zsync = @import("zsync");
 
-// Re-export Shroud modules for convenience
-pub const GhostWire = shroud.GhostWire;
-pub const GhostCipher = shroud.GhostCipher;
-pub const Sigil = shroud.Sigil;
-pub const ZNS = shroud.ZNS;
-pub const Keystone = shroud.Keystone;
-pub const Guardian = shroud.Guardian;
-pub const Covenant = shroud.Covenant;
-pub const ShadowCraft = shroud.ShadowCraft;
-pub const GWallet = shroud.GWallet;
+// Re-export core modules for convenience
+pub const QuicServer = zquic.Server;
+pub const Http3Handler = zquic.Http3;
+pub const NetworkManager = ghostnet.Manager;
+pub const TlsProvider = zcrypto.Tls;
+pub const AsyncRuntime = zsync.Runtime;
+pub const CryptoProvider = zcrypto.Provider;
 
-// Wraith-specific wrappers and extensions
-pub const WraithGateway = struct {
-    ghostwire: GhostWire,
-    sigil: Sigil,
-    zns: ZNS,
-
-    pub fn init(allocator: std.mem.Allocator) !WraithGateway {
-        return WraithGateway{
-            .ghostwire = try GhostWire.init(allocator),
-            .sigil = try Sigil.init(allocator),
-            .zns = try ZNS.init(allocator),
+// Wraith-specific proxy and routing functionality
+pub const WraithProxy = struct {
+    allocator: std.mem.Allocator,
+    runtime: AsyncRuntime,
+    network: NetworkManager,
+    tls: TlsProvider,
+    
+    pub fn init(allocator: std.mem.Allocator) !WraithProxy {
+        return WraithProxy{
+            .allocator = allocator,
+            .runtime = try AsyncRuntime.init(allocator),
+            .network = try NetworkManager.init(allocator),
+            .tls = try TlsProvider.init(allocator),
         };
     }
-
-    pub fn deinit(self: *WraithGateway) void {
-        self.ghostwire.deinit();
-        self.sigil.deinit();
-        self.zns.deinit();
+    
+    pub fn deinit(self: *WraithProxy) void {
+        self.tls.deinit();
+        self.network.deinit();
+        self.runtime.deinit();
     }
-
-    pub fn resolve_domain(self: *WraithGateway, domain: []const u8) ![]const u8 {
-        return self.zns.resolve(domain);
+    
+    pub fn setupTls(self: *WraithProxy, cert_path: []const u8, key_path: []const u8) !void {
+        return self.tls.loadCertificate(cert_path, key_path);
     }
-
-    pub fn authenticate_request(self: *WraithGateway, request: anytype) !bool {
-        return self.sigil.verify(request);
+    
+    pub fn addRoute(self: *WraithProxy, pattern: []const u8, upstream: []const u8) !void {
+        // Route management functionality
+        _ = self;
+        _ = pattern;
+        _ = upstream;
     }
 };
 
@@ -62,9 +67,10 @@ pub const Router = router.Router;
 pub const StaticFileServer = static_files.StaticFileServer;
 pub const ServerConfig = server.ServerConfig;
 pub const WraithServer = server.WraithServer;
+pub const ProxyConfig = server.ProxyConfig;
 
 // Version information
-pub const version = "0.2.0";
+pub const version = "0.5.0";
 
 test {
     std.testing.refAllDecls(@This());

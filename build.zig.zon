@@ -32,13 +32,21 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .shroud = .{
-            .url = "https://github.com/ghostkellz/shroud/archive/refs/heads/main.tar.gz",
-            .hash = "shroud-1.0.1-z7C8mahctAPpLPuaNG8k4vMfxAoAMCgaa770VRz4FOOP",
-        },
         .zquic = .{
             .url = "https://github.com/ghostkellz/zquic/archive/refs/heads/main.tar.gz",
-            .hash = "zquic-0.8.0-2rPdsz6KmRMWL2vB8wXanYpOSCadnvs03NasHyiZunHx",
+            .hash = "zquic-0.8.0-2rPdsz6KmRN6DaxicN_GS-x9Gaeg3qlFo6cKfa3s1KDO",
+        },
+        .zcrypto = .{
+            .url = "https://github.com/ghostkellz/zcrypto/archive/refs/heads/main.tar.gz",
+            .hash = "zcrypto-0.8.3-rgQAI8wFDAD5qBCumYyC-gCZpzacQHbApwyvXj-ZCbiG",
+        },
+        .ghostnet = .{
+            .url = "https://github.com/ghostkellz/ghostnet/archive/refs/heads/main.tar.gz",
+            .hash = "ghostnet-0.2.1-mG-fWPG5BQDF0zGg6YWl1LgNiOzzZRrmT4XU9xl6I4s5",
+        },
+        .zsync = .{
+            .url = "https://github.com/ghostkellz/zsync/archive/refs/heads/main.tar.gz",
+            .hash = "zsync-0.3.2-KAuhed0XGADaOKjYNl34Ragvca2zBYqvoAsBV-AhkoLS",
         },
     },
     .paths = .{

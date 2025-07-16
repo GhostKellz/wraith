@@ -1,12 +1,24 @@
-//! Wraith - Modern Web Gateway with Shroud Framework
+//! Wraith - Modern QUIC/HTTP3 Reverse Proxy
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Add Shroud framework dependency
-    const shroud_dep = b.dependency("shroud", .{
+    // Add core dependencies
+    const zquic_dep = b.dependency("zquic", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const ghostnet_dep = b.dependency("ghostnet", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zcrypto_dep = b.dependency("zcrypto", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zsync_dep = b.dependency("zsync", .{
         .target = target,
         .optimize = optimize,
     });
@@ -16,7 +28,10 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .imports = &.{
-            .{ .name = "shroud", .module = shroud_dep.module("shroud") },
+            .{ .name = "zquic", .module = zquic_dep.module("zquic") },
+            .{ .name = "ghostnet", .module = ghostnet_dep.module("ghostnet") },
+            .{ .name = "zcrypto", .module = zcrypto_dep.module("zcrypto") },
+            .{ .name = "zsync", .module = zsync_dep.module("zsync") },
         },
     });
 
@@ -29,7 +44,10 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "wraith", .module = mod },
-                .{ .name = "shroud", .module = shroud_dep.module("shroud") },
+                .{ .name = "zquic", .module = zquic_dep.module("zquic") },
+                .{ .name = "ghostnet", .module = ghostnet_dep.module("ghostnet") },
+                .{ .name = "zcrypto", .module = zcrypto_dep.module("zcrypto") },
+                .{ .name = "zsync", .module = zsync_dep.module("zsync") },
             },
         }),
     });

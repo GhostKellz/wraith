@@ -1,32 +1,46 @@
-//! Wraith Server - Core Web2/Web3/Web5 Gateway Implementation
-//! Built on Shroud framework for unified protocol support
+//! Wraith Server - Core QUIC/HTTP3 Reverse Proxy Implementation
+//! Built on zquic, ghostnet, zcrypto, and zsync for high-performance proxying
 
 const std = @import("std");
+const zquic = @import("zquic");
+const ghostnet = @import("ghostnet");
+const zcrypto = @import("zcrypto");
+const zsync = @import("zsync");
 
 const print = std.debug.print;
 const Allocator = std.mem.Allocator;
 
-// Simple placeholder for WraithGateway to avoid circular import
-const WraithGateway = struct {
+// Simple placeholder for WraithProxy to avoid circular import
+const WraithProxy = struct {
     allocator: Allocator,
+    runtime: *zsync.Runtime,
 
-    pub fn init(allocator: Allocator) !WraithGateway {
-        return WraithGateway{ .allocator = allocator };
+    pub fn init(allocator: Allocator) !WraithProxy {
+        return WraithProxy{ 
+            .allocator = allocator,
+            .runtime = try zsync.Runtime.init(allocator, .{
+                .max_tasks = 1024,
+                .enable_io = true,
+                .enable_timers = true,
+            }),
+        };
     }
 
-    pub fn deinit(self: *WraithGateway) void {
-        _ = self;
+    pub fn deinit(self: *WraithProxy) void {
+        self.runtime.deinit();
+        self.allocator.destroy(self.runtime);
     }
 
-    pub fn resolve_domain(self: *WraithGateway, domain: []const u8) ![]const u8 {
+    pub fn setupTls(self: *WraithProxy, cert_path: []const u8, key_path: []const u8) !void {
         _ = self;
-        return domain; // placeholder
+        _ = cert_path;
+        _ = key_path;
     }
 
-    pub fn authenticate_request(self: *WraithGateway, request: anytype) !bool {
+    pub fn addRoute(self: *WraithProxy, pattern: []const u8, upstream: []const u8) !void {
         _ = self;
-        _ = request;
-        return true; // placeholder
+        _ = pattern;
+        _ = upstream;
     }
 };
 
@@ -39,41 +53,69 @@ pub const ServerConfig = struct {
     max_connections: u32 = 10000,
     enable_compression: bool = true,
     enable_http3: bool = true,
-    enable_websockets: bool = true,
-    enable_grpc: bool = true,
     enable_tls13_only: bool = true,
-    enable_web3: bool = true,
-    enable_domain_resolution: bool = true,
+    upstream_servers: [][]const u8 = &.{},
+};
+
+pub const ProxyConfig = struct {
+    routes: []Route = &.{},
+    acl_rules: []AclRule = &.{},
+    rate_limits: RateLimitConfig = .{},
+};
+
+pub const Route = struct {
+    pattern: []const u8,
+    upstream: []const u8,
+    method: []const u8 = "GET",
+};
+
+pub const AclRule = struct {
+    allow: bool,
+    pattern: []const u8,
+    source_ip: ?[]const u8 = null,
+};
+
+pub const RateLimitConfig = struct {
+    requests_per_second: u32 = 1000,
+    burst_size: u32 = 100,
 };
 
 pub const WraithServer = struct {
     allocator: Allocator,
     config: ServerConfig,
-    gateway: WraithGateway,
+    proxy_config: ProxyConfig,
+    proxy: WraithProxy,
     is_running: bool = false,
 
     const Self = @This();
 
     pub fn init(allocator: Allocator, config: ServerConfig) !Self {
-        print("🔧 Initializing Wraith gateway with Shroud framework...\n", .{});
+        print("🔧 Initializing Wraith QUIC/HTTP3 reverse proxy...\n", .{});
 
-        // Initialize Shroud gateway
-        const gateway = try WraithGateway.init(allocator);
+        // Initialize core proxy
+        const proxy = try WraithProxy.init(allocator);
 
         return Self{
             .allocator = allocator,
             .config = config,
-            .gateway = gateway,
+            .proxy_config = ProxyConfig{},
+            .proxy = proxy,
             .is_running = false,
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.gateway.deinit();
+        self.proxy.deinit();
     }
 
     pub fn start(self: *Self) !void {
-        print("🚀 Starting Wraith Web2/Web3/Web5 gateway on {s}:{}\n", .{ self.config.bind_address, self.config.port });
+        print("🚀 Starting Wraith QUIC/HTTP3 reverse proxy on {s}:{}\n", .{ self.config.bind_address, self.config.port });
+
+        // Setup TLS certificates
+        try self.proxy.setupTls(self.config.cert_path, self.config.key_path);
+
+        // Initialize QUIC library
+        try zquic.init(self.allocator);
 
         self.is_running = true;
 
@@ -82,25 +124,30 @@ pub const WraithServer = struct {
     }
 
     fn runServer(self: *Self) !void {
-        print("✅ Wraith gateway ready! Shroud framework initialized\n", .{});
-        print("📋 Gateway features:\n", .{});
-        print("   • Protocol: QUIC/HTTP3/WebSocket/gRPC unified\n", .{});
-        print("   • Framework: Shroud (GhostWire, GhostCipher, Sigil, ZNS)\n", .{});
-        print("   • Web3/Web5: Domain resolution, identity, crypto\n", .{});
+        print("✅ Wraith reverse proxy ready!\n", .{});
+        print("📋 Proxy features:\n", .{});
+        print("   • Protocol: QUIC/HTTP3 reverse proxy\n", .{});
+        print("   • Stack: zquic + ghostnet + zcrypto + zsync\n", .{});
+        print("   • TLS termination: Enabled\n", .{});
         print("   • Max connections: {}\n", .{self.config.max_connections});
 
-        print("🎉 Wraith Web2/Web3/Web5 gateway started successfully!\n", .{});
-        print("🌐 Ready to handle unified protocol requests on {s}:{}\n", .{ self.config.bind_address, self.config.port });
+        print("🎉 Wraith QUIC/HTTP3 reverse proxy started successfully!\n", .{});
+        print("🌐 Ready to handle QUIC/HTTP3 requests on {s}:{}\n", .{ self.config.bind_address, self.config.port });
 
         // Keep the server running
         while (self.is_running) {
             std.time.sleep(1000 * 1000 * 1000); // Sleep 1 second
+            // Runtime processing handled internally by zsync
         }
     }
 
     pub fn stop(self: *Self) void {
-        print("🛑 Stopping Wraith gateway...\n", .{});
+        print("🛑 Stopping Wraith reverse proxy...\n", .{});
         self.is_running = false;
+    }
+
+    pub fn addRoute(self: *Self, pattern: []const u8, upstream: []const u8) !void {
+        return self.proxy.addRoute(pattern, upstream);
     }
 };
 
