@@ -33,16 +33,16 @@
     // internet connectivity.
     .dependencies = .{
         .zquic = .{
-            .url = "https://github.com/ghostkellz/zquic/archive/refs/heads/main.tar.gz",
-            .hash = "zquic-0.8.0-2rPdsz6KmRN6DaxicN_GS-x9Gaeg3qlFo6cKfa3s1KDO",
+            .url = "https://github.com/ghostkellz/zquic/archive/main.tar.gz",
+            .hash = "zquic-0.8.0-2rPdszOKmRPN-p7Qtj0tRzlk7djfiOV_SUcJzjtmt4UO",
         },
         .zcrypto = .{
-            .url = "https://github.com/ghostkellz/zcrypto/archive/refs/heads/main.tar.gz",
-            .hash = "zcrypto-0.8.3-rgQAI8wFDAD5qBCumYyC-gCZpzacQHbApwyvXj-ZCbiG",
+            .url = "https://github.com/ghostkellz/zcrypto/archive/main.tar.gz",
+            .hash = "zcrypto-0.8.4-rgQAI6I0DQD3T7Vk5_S-EaUxMAhoXp7YvJtnzInpG7U1",
         },
         .ghostnet = .{
-            .url = "https://github.com/ghostkellz/ghostnet/archive/refs/heads/main.tar.gz",
-            .hash = "ghostnet-0.2.1-mG-fWPG5BQDF0zGg6YWl1LgNiOzzZRrmT4XU9xl6I4s5",
+            .url = "https://github.com/ghostkellz/ghostnet/archive/main.tar.gz",
+            .hash = "ghostnet-0.3.1-mG-fWHAcCACvgCzGkNPhjXTmKnS9e8DN0mRN15xiRjez",
         },
         .zsync = .{
             .url = "https://github.com/ghostkellz/zsync/archive/refs/heads/main.tar.gz",
