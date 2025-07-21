@@ -34,7 +34,7 @@
     .dependencies = .{
         .zquic = .{
             .url = "https://github.com/ghostkellz/zquic/archive/main.tar.gz",
-            .hash = "zquic-0.8.0-2rPdszOKmRPN-p7Qtj0tRzlk7djfiOV_SUcJzjtmt4UO",
+            .hash = "zquic-0.8.2-2rPdszxenBMHPfgmfwgDnBiL6MBy55i7NktMbEizfLeB",
         },
         .zcrypto = .{
             .url = "https://github.com/ghostkellz/zcrypto/archive/main.tar.gz",
@@ -42,7 +42,7 @@
         },
         .ghostnet = .{
             .url = "https://github.com/ghostkellz/ghostnet/archive/main.tar.gz",
-            .hash = "ghostnet-0.3.1-mG-fWHAcCACvgCzGkNPhjXTmKnS9e8DN0mRN15xiRjez",
+            .hash = "ghostnet-0.3.1-mG-fWGUcCAD_BQZwFVhYZrOInVULI_sbD_kWqhWHcuie",
         },
         .zsync = .{
             .url = "https://github.com/ghostkellz/zsync/archive/refs/heads/main.tar.gz",
