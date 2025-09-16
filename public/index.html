@@ -3,132 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 Wraith - Modern HTTP/3 Proxy</title>
+    <title>Wraith - QUIC/HTTP3 Proxy</title>
     <style>
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            margin: 0;
-            padding: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 800px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
         }
-        h1 {
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .logo {
             font-size: 3em;
-            margin-bottom: 0.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
         }
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
-            margin: 30px 0;
+            margin: 40px 0;
         }
         .feature {
-            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #eee;
+            border-radius: 8px;
             padding: 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #f9f9f9;
         }
         .feature h3 {
             margin-top: 0;
-            font-size: 1.2em;
+            color: #2c5aa0;
         }
-        .protocol-info {
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid rgba(0, 255, 0, 0.3);
+        .status {
+            text-align: center;
             padding: 20px;
-            border-radius: 10px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            color: #2d6a2d;
             margin: 20px 0;
         }
-        .code {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            margin: 20px 0;
-            text-align: left;
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔥 Wraith</h1>
-        <p style="font-size: 1.3em; margin-bottom: 30px;">
-            Modern QUIC/HTTP3 Reverse Proxy
-        </p>
-
-        <div class="protocol-info">
-            <h2>✅ Server Status: Online</h2>
-            <p><strong>Protocol:</strong> HTTP/3 over QUIC</p>
-            <p><strong>TLS:</strong> 1.3 (post-quantum ready)</p>
-            <p><strong>Transport:</strong> UDP (no TCP dependency)</p>
-            <p><strong>Built with:</strong> Zig for maximum performance</p>
-        </div>
-
-        <div class="features">
-            <div class="feature">
-                <h3>⚡ Zero Latency</h3>
-                <p>QUIC connection multiplexing eliminates head-of-line blocking</p>
-            </div>
-            <div class="feature">
-                <h3>🔒 Post-Quantum</h3>
-                <p>TLS 1.3 with modern crypto ready for quantum computers</p>
-            </div>
-            <div class="feature">
-                <h3>🚀 HTTP/3 Native</h3>
-                <p>Built from the ground up for HTTP/3, not retrofitted</p>
-            </div>
-            <div class="feature">
-                <h3>🔧 Declarative Config</h3>
-                <p>YAML/TOML configuration, not complex DSL</p>
-            </div>
-        </div>
-
-        <div class="code">
-            <h3>🚀 Quick Start:</h3>
-            <pre>
-# Install Wraith
-zig build -Doptimize=ReleaseFast
-
-# Run with config
-./zig-out/bin/wraith serve -c wraith.toml
-
-# Generate dev certificates  
-./zig-out/bin/wraith generate certs --dns
-
-# Check status
-./zig-out/bin/wraith status
-            </pre>
-        </div>
-
-        <p style="margin-top: 40px; font-size: 0.9em; opacity: 0.8;">
-            Reimagining NGINX for the HTTP/3 era • Built with ❤️ and Zig
-        </p>
+    <div class="header">
+        <div class="logo">🔥 Wraith</div>
+        <div class="subtitle">Modern QUIC/HTTP3 Reverse Proxy & Static Server</div>
     </div>
 
-    <script>
-        // Add some interactivity
-        console.log('🔥 Wraith HTTP/3 server running!');
-        console.log('Protocol:', window.location.protocol);
-        console.log('Connection info:', navigator.connection);
-        
-        // Show protocol information
-        if (window.location.protocol === 'https:') {
-            console.log('✅ Secure connection established');
-        }
-    </script>
+    <div class="status">
+        ✅ Wraith is running successfully!
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <h3>🚀 HTTP/3 First</h3>
+            <p>Native QUIC transport with zero TCP dependency. Built for the modern web with HTTP/3 as the primary protocol.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🔒 TLS 1.3 Security</h3>
+            <p>Hardened cryptographic security with post-quantum readiness. ACME integration for automatic certificate management.</p>
+        </div>
+
+        <div class="feature">
+            <h3>⚡ High Performance</h3>
+            <p>Connection multiplexing, zero-copy operations, and efficient load balancing with multiple algorithms.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🛡️ Built-in Security</h3>
+            <p>Rate limiting, DDoS protection, and comprehensive security headers. WAF integration ready.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📁 Static File Server</h3>
+            <p>High-performance static file serving with gzip/zstd compression, ETag support, and smart caching.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🔧 Easy Configuration</h3>
+            <p>Declarative TOML configuration with hot reload capability. No complex DSL to learn.</p>
+        </div>
+    </div>
+
+    <h2>Quick Start</h2>
+    <p>To get started with Wraith:</p>
+    <ol>
+        <li>Configure your <code>wraith.toml</code> file</li>
+        <li>Run <code>wraith serve</code> to start the server</li>
+        <li>Visit <code>http://localhost:9090/admin</code> for management</li>
+        <li>Check <code>/health</code> for health status</li>
+    </ol>
+
+    <h2>Protocol Stack</h2>
+    <ul>
+        <li><strong>QUIC</strong> - Native transport protocol (no TCP dependency)</li>
+        <li><strong>HTTP/3</strong> - Default supported layer</li>
+        <li><strong>TLS 1.3</strong> - Built-in, hardened, minimal config</li>
+        <li><strong>IPv6-first</strong> - IPv4 fallback support</li>
+    </ul>
+
+    <footer style="text-align: center; margin-top: 60px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">
+        <p>Wraith v0.1.0 - Built with Rust and designed for speed</p>
+    </footer>
 </body>
 </html>

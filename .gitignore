@@ -4,3 +4,8 @@
 .claude
 *.o
 *.exe
+
+
+# Added by cargo
+
+/target

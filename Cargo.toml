@@ -1,0 +1,71 @@
+[package]
+name = "wraith"
+version = "0.1.0"
+edition = "2024"
+authors = ["Wraith Contributors"]
+description = "Modern, blazing-fast QUIC/HTTP3 reverse proxy and static server"
+license = "MIT"
+repository = "https://github.com/ghostkellz/wraith"
+
+[dependencies]
+# Core async runtime
+tokio = { version = "1.42", features = ["full"] }
+
+# HTTP support
+hyper = { version = "1.5", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http = "1.1"
+http-body-util = "0.1"
+bytes = "1.9"
+
+# TLS and crypto
+rustls = { version = "0.23", features = ["std"] }
+rustls-pemfile = "2.2"
+tokio-rustls = "0.26"
+rcgen = "0.13"
+
+# Configuration
+toml = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI and logging
+clap = { version = "4.5", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"] }
+
+# Compression
+flate2 = "1.0"
+
+# Utils
+anyhow = "1.0"
+thiserror = "2.0"
+futures = "0.3"
+once_cell = "1.20"
+hex = "0.4"
+httpdate = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json"] }
+rand = "0.8"
+
+# Admin API
+axum = "0.7"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "compression-gzip"] }
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.5"
+tempfile = "3.14"
+
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+debug = true
