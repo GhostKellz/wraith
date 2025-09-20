@@ -45,6 +45,7 @@ pub struct AdminConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ProxyConfig {
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -82,7 +83,9 @@ pub struct RouteConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum LoadBalancingMethod {
+    #[default]
     RoundRobin,
     LeastConnections,
     Random,
@@ -224,11 +227,6 @@ fn default_health_status() -> u16 {
     200
 }
 
-impl Default for LoadBalancingMethod {
-    fn default() -> Self {
-        LoadBalancingMethod::RoundRobin
-    }
-}
 
 impl Default for HealthCheckGlobalConfig {
     fn default() -> Self {
@@ -242,14 +240,3 @@ impl Default for HealthCheckGlobalConfig {
     }
 }
 
-impl Default for ProxyConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            upstreams: vec![],
-            routes: vec![],
-            load_balancing: LoadBalancingMethod::default(),
-            health_check: HealthCheckGlobalConfig::default(),
-        }
-    }
-}

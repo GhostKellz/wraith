@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wraith - QUIC/HTTP3 Proxy</title>
+    <title>Wraith - HTTP Proxy</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -60,7 +60,7 @@
 <body>
     <div class="header">
         <div class="logo">🔥 Wraith</div>
-        <div class="subtitle">Modern QUIC/HTTP3 Reverse Proxy & Static Server</div>
+        <div class="subtitle">Modern HTTP Reverse Proxy & Static Server</div>
     </div>
 
     <div class="status">
@@ -69,8 +69,8 @@
 
     <div class="features">
         <div class="feature">
-            <h3>🚀 HTTP/3 First</h3>
-            <p>Native QUIC transport with zero TCP dependency. Built for the modern web with HTTP/3 as the primary protocol.</p>
+            <h3>🚀 HTTP/1.1 & HTTP/2</h3>
+            <p>Full support for HTTP/1.1 and HTTP/2 protocols with automatic negotiation. Built for reliability and performance.</p>
         </div>
 
         <div class="feature">
@@ -110,10 +110,10 @@
 
     <h2>Protocol Stack</h2>
     <ul>
-        <li><strong>QUIC</strong> - Native transport protocol (no TCP dependency)</li>
-        <li><strong>HTTP/3</strong> - Default supported layer</li>
+        <li><strong>TCP</strong> - Reliable transport protocol</li>
+        <li><strong>HTTP/1.1 & HTTP/2</strong> - Full protocol support</li>
         <li><strong>TLS 1.3</strong> - Built-in, hardened, minimal config</li>
-        <li><strong>IPv6-first</strong> - IPv4 fallback support</li>
+        <li><strong>IPv4/IPv6</strong> - Dual-stack support</li>
     </ul>
 
     <footer style="text-align: center; margin-top: 60px; color: #666; border-top: 1px solid #eee; padding-top: 20px;">

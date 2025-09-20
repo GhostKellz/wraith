@@ -529,7 +529,7 @@ async fn admin_dashboard_handler(State(config): State<Arc<Config>>) -> Html<Stri
 <body>
     <div class="header">
         <h1>🔥 Wraith Admin Dashboard</h1>
-        <p>Modern QUIC/HTTP3 Reverse Proxy Management Interface</p>
+        <p>Modern HTTP Reverse Proxy Management Interface</p>
     </div>
 
     <button class="btn refresh-btn" onclick="location.reload()">🔄 Refresh</button>

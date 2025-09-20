@@ -14,7 +14,7 @@ use server::WraithServer;
 #[command(
     name = "wraith",
     version,
-    about = "Modern QUIC/HTTP3 reverse proxy and static server",
+    about = "Modern HTTP reverse proxy and static server",
     long_about = None
 )]
 struct Cli {
@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
 
     match cli.command {
         Commands::Serve { config, dev } => {
-            info!("🔥 Wraith - Modern QUIC/HTTP3 Reverse Proxy starting...");
+            info!("🔥 Wraith - Modern HTTP Reverse Proxy starting...");
 
             let config = if dev {
                 info!("🔧 Running in development mode");
@@ -144,7 +144,7 @@ async fn main() -> Result<()> {
 
             let client = reqwest::Client::new();
             let response = client
-                .post(&format!("{}/admin/reload", endpoint))
+                .post(format!("{}/admin/reload", endpoint))
                 .json(&new_config)
                 .send()
                 .await;
@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
 
             let client = reqwest::Client::new();
             let response = client
-                .post(&format!("{}/admin/stop", endpoint))
+                .post(format!("{}/admin/stop", endpoint))
                 .send()
                 .await;
 
@@ -193,7 +193,7 @@ async fn main() -> Result<()> {
 
             let client = reqwest::Client::new();
             let response = client
-                .post(&format!("{}/admin/quit", endpoint))
+                .post(format!("{}/admin/quit", endpoint))
                 .send()
                 .await;
 
@@ -214,7 +214,7 @@ async fn main() -> Result<()> {
             info!("📊 Fetching server status...");
 
             let client = reqwest::Client::new();
-            let response = client.get(&format!("{}/admin/health", endpoint)).send().await;
+            let response = client.get(format!("{}/admin/health", endpoint)).send().await;
 
             match response {
                 Ok(resp) if resp.status().is_success() => {

@@ -3,7 +3,7 @@ name = "wraith"
 version = "0.1.0"
 edition = "2024"
 authors = ["Wraith Contributors"]
-description = "Modern, blazing-fast QUIC/HTTP3 reverse proxy and static server"
+description = "Modern, blazing-fast HTTP reverse proxy and static server"
 license = "MIT"
 repository = "https://github.com/ghostkellz/wraith"
 

@@ -347,7 +347,7 @@ impl StaticFileServer {
 <h1>404 Not Found</h1>
 <p>The requested resource was not found on this server.</p>
 <hr>
-<p><em>Wraith HTTP/3 Server</em></p>
+<p><em>Wraith HTTP Server</em></p>
 </body>
 </html>"#,
             )),
