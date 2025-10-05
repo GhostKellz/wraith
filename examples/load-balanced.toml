@@ -1,0 +1,59 @@
+# Wraith Load Balanced Reverse Proxy
+# This example demonstrates load balancing across multiple backends
+
+[server]
+listen = ["0.0.0.0:80"]
+listen_tls = ["0.0.0.0:443"]
+worker_threads = 4
+
+[tls]
+cert_dir = "/etc/wraith/certs"
+acme_enabled = true
+acme_email = "admin@example.com"
+
+[logging]
+level = "info"
+format = "json"
+output = "stdout"
+
+[security]
+crowdsec_api = "http://localhost:8080"
+crowdsec_enabled = false
+rate_limit = { requests = 100, window = "1m" }
+
+# Backend pool with weighted load balancing
+[[upstream]]
+name = "app_servers"
+servers = [
+  { host = "10.0.0.1:8080", weight = 3 },  # Higher weight = more traffic
+  { host = "10.0.0.2:8080", weight = 2 },
+  { host = "10.0.0.3:8080", weight = 1 },
+]
+load_balancing = "weighted"
+health_check = { interval = "5s", timeout = "3s", path = "/healthz" }
+
+# Static file server
+[[upstream]]
+name = "static"
+servers = [
+  { host = "10.0.1.1:80", weight = 1 },
+]
+load_balancing = "round_robin"
+
+# Route API traffic to app servers
+[[route]]
+host = "api.example.com"
+path = "/api"
+upstream = "app_servers"
+
+# Route static assets
+[[route]]
+host = "example.com"
+path = "/static"
+upstream = "static"
+
+# Default route
+[[route]]
+host = "*"
+path = "/"
+upstream = "app_servers"

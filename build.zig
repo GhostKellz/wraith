@@ -28,6 +28,48 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
+    // Import all dependencies
+    const zsync = b.dependency("zsync", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const flash = b.dependency("flash", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const flare = b.dependency("flare", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zlog = b.dependency("zlog", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zhttp = b.dependency("zhttp", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zcrypto = b.dependency("zcrypto", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zregex = b.dependency("zregex", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zpack = b.dependency("zpack", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const ztime = b.dependency("ztime", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zigzag = b.dependency("zigzag", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const mod = b.addModule("wraith", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
@@ -79,6 +121,17 @@ pub fn build(b: *std.Build) void {
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
                 .{ .name = "wraith", .module = mod },
+                // Import all P0 dependencies
+                .{ .name = "zsync", .module = zsync.module("zsync") },
+                .{ .name = "flash", .module = flash.module("flash") },
+                .{ .name = "flare", .module = flare.module("flare") },
+                .{ .name = "zlog", .module = zlog.module("zlog") },
+                .{ .name = "zhttp", .module = zhttp.module("zhttp") },
+                .{ .name = "zcrypto", .module = zcrypto.module("zcrypto") },
+                .{ .name = "zregex", .module = zregex.module("zregex") },
+                .{ .name = "zpack", .module = zpack.module("zpack") },
+                .{ .name = "ztime", .module = ztime.module("ztime") },
+                .{ .name = "zigzag", .module = zigzag.module("zigzag") },
             },
         }),
     });

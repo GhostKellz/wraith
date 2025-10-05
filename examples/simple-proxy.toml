@@ -1,0 +1,32 @@
+# Wraith Simple Reverse Proxy Configuration
+# This example forwards requests to a single backend server
+
+[server]
+listen = ["0.0.0.0:80", "[::]:80"]
+listen_tls = ["0.0.0.0:443", "[::]:443"]
+worker_threads = 0  # 0 = auto-detect CPU cores
+
+[tls]
+cert_dir = "/etc/wraith/certs"
+acme_enabled = true
+acme_email = "admin@example.com"
+
+[logging]
+level = "info"           # debug, info, warn, error
+format = "json"          # json, text
+output = "/var/log/wraith/access.log"  # stdout, stderr, or file path
+
+# Define backend servers
+[[upstream]]
+name = "backend"
+servers = [
+  { host = "127.0.0.1:8080", weight = 1 },
+]
+load_balancing = "round_robin"  # round_robin, least_connections, random, weighted, ip_hash
+health_check = { interval = "10s", timeout = "5s", path = "/health" }
+
+# Route all traffic to backend
+[[route]]
+host = "*"              # Match all hosts
+path = "/"              # Match all paths
+upstream = "backend"
